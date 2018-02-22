@@ -6,8 +6,8 @@
  */
 
 #include <assert.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef _WIN32
@@ -17,14 +17,17 @@
 #include <sys/stat.h>
 #endif
 
-#define RED "\x1b[91m"
+#define RED    "\x1b[91m"
 #define NORMAL "\x1b[0m"
 
-enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Other, Error };
-enum AccessLevel { User = 1, Admin = 2, System = 3 };
 enum OS_Lang { English, Spanish };
+enum AccessLevel { User = 1, Admin = 2, System = 3 };
+enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Other, Error };
 
 OS_Lang language;
+
+// TODO: remove "; "
+// TODO: var name
 
 WinVer WindowsVersion() {
 #ifdef _WIN32
@@ -33,16 +36,18 @@ WinVer WindowsVersion() {
   fputs("@Echo off\n del /F version >nul 2>&1\n ver > version", pFile);
   fclose(pFile);
   system("C:\\Windows\\System32\\cmd.exe /C version.cmd");
-  unsigned int os_ver1, os_ver2; char str_ver[256];
+  unsigned int os_ver1, os_ver2;
+  char str_ver[8]; // TODO: new char[], 'o is a single character
   pFile = fopen("version", "r");
   if (pFile == NULL) return Error;
-  int readed = fscanf(pFile, "\nMicrosoft Windows [%s %d.%d.", str_ver, &os_ver1, &os_ver2);
+  int readed = fscanf(pFile, "\nMicrosoft Windows [%s %u.%u.", str_ver, &os_ver1, &os_ver2);
   fclose(pFile);
   remove("version");
   remove("version.cmd");
 
   if (readed != 3) return Error;
   language = strcmp(str_ver, "Version") ? English : Spanish;
+  delete str_ver;
   switch (os_ver1) {
     case 10:
       return Win10;
@@ -69,13 +74,15 @@ WinVer WindowsVersion() {
 static bool GetSystem(AccessLevel& program, const char* file) {
   program = Admin;
   if (file == NULL) return false;
-  char str1[256] = "TAKEOWN /F ";
+  char str1[strlen(file) + 15]; // TODO: new char[]
+  strcpy(str1, "TAKEOWN /F ");
   strcat(str1, file);
   strcat(str1, " /A");
   printf("Executing: %s\n", str1);
   system(str1);
+  // TODO: delete str1;
 
-  char str2[256] = "ICACLS ";
+  char str2[strlen(file) + 32] = "ICACLS "; // TODO: 31 if eng & new char
   strcat(str2, file);
   if (language == English) // TODO: get group name
     strcat(str2, " /GRANT Administrators:F");
@@ -83,6 +90,12 @@ static bool GetSystem(AccessLevel& program, const char* file) {
     strcat(str2, " /GRANT Administradores:F");
   printf("Executing: %s\n", str2);
   system(str2);
+  // TODO: delete str2
+
+/*  int length = strlen(str2);
+  int size = sizeof(str2);
+  printf("|%s| %d %d\n", str2, length + 1, size);
+  assert(size == length + 1);*/
 
   program = System;
   return true;
@@ -90,7 +103,7 @@ static bool GetSystem(AccessLevel& program, const char* file) {
 
 static bool IsUserSystem(AccessLevel& program, const char* file) {
   program = User;
-  if (IsUserAnAdmin()) {
+  if (IsUserAnAdmin()) { // TODO: remove {}
     return GetSystem(program, file);
   } else {
     MessageBox(NULL, "Admin access is required on this OS.\n", "Windows 10", MB_ICONERROR | MB_OK);
@@ -120,11 +133,12 @@ void MountedSearch() {
 #ifndef _WIN32
   printf("Looking for mounted drives...\n");
   const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[[:digit:]]/ && $2 != \"\"' > drive_list";
+  // TODO: new, strcpy
   system(list_drives);
   FILE* drive_list = fopen("drive_list", "r");
   assert(drive_list != NULL);
 
-  char drive[256];
+  char drive[256];  // TODO: alcance, new char, strcpy
   char source[256];
   char name[256];
   char del[256];
@@ -135,6 +149,7 @@ void MountedSearch() {
     strcat(name, "/Windows/System32/D3D12.dll");
     // <- That's a valid path.
     printf("Looking for file: %s\n", name);
+	// TODO: change //c/example/url for /c/example/url
     struct stat buffer;
     if (stat(name, &buffer) == 0) {
       printf(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
@@ -153,12 +168,13 @@ void MountedSearch() {
 void UnmountedSearch() {
 #ifndef _WIN32
   printf("Looking for unmounted drives...\n");
-  const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[[:digit:]]/ && $2 == \"\"' > drive_list";
+  const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[[:digit:]]/ && $2 == \"\"' > drive_list"; test(list_drives);
+  // TODO: new, strcpy
   system(list_drives);
   FILE* drive_list = fopen("drive_list", "r");
   assert(drive_list != NULL);
 
-  char drive[256];
+  char drive[256]; // TODO: alcance, new char, strcpy
   char source[256];
   char name[256];
   char del[256];
@@ -167,9 +183,9 @@ void UnmountedSearch() {
     printf("Unmounted drive found in: %s\n", drive);
 
     printf("Mounting drive...\n");
-    char mount[256] = "udisksctl mount -b /dev/";
+    char mount[256] = "udisksctl mount -b /dev/"; // TODO: new, strcpy
     strcat(mount, drive);
-    strcat(mount, " > source");
+    strcat(mount, " > source"); test(mount);
     system(mount);
 
     FILE* pFile = fopen("source", "r");
