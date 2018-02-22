@@ -61,6 +61,22 @@ WinVer WindowsVersion() {
   return Other;
 }
 
+/*
+Access level 1, 2, 3
+User
+Admin
+System
+
+if (level_1) ask_admin();
+else get_system();
+
+ TAKEOWN /F ":\\." /A
+
+ ICACLS ":\\." /GRANT Administrators:F
+
+*/
+
+
 static void DeleteIf[[maybe_unused]](bool cond, const char* path) {
   if (cond) remove(path);
 #ifdef _WIN32
