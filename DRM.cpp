@@ -26,8 +26,6 @@ enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Ot
 
 OS_Lang language;
 
-// TODO: print(stdout) scan(buf, 32)
-
 WinVer WindowsVersion() {
 #ifdef _WIN32
   FILE* script = fopen("version.cmd", "w");
@@ -158,7 +156,9 @@ void MountedSearch() {
       printf("Deleting %s ...\n", del);
       assert(strlen(del) == strlen(source) + 26);//////////////////
       remove(del);
+      delete del;
     }
+    delete name;
     printf("\n");
   }
   fclose(drive_list);
@@ -217,7 +217,9 @@ void UnmountedSearch() {
       printf("Deleting %s ...\n", del);
       assert(strlen(del) == strlen(source) + 26);//////////////////
       remove(del);
+      delete del;
     }
+    delete name;
     printf("\n");
   }
   fclose(drive_list);
@@ -260,6 +262,7 @@ int main(int argc, char* argv[]) {
   // Main program start here.
   printf("\n");
   printf("Hello World!");
+  getchar();
   printf("\n\n");
   return 0;
 }
