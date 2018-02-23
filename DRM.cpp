@@ -26,8 +26,6 @@ enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Ot
 
 OS_Lang language;
 
-// TODO: mark necessary with [[maybe_unused]]
-
 WinVer WindowsVersion() {
 #ifdef _WIN32
   FILE* script = fopen("version.cmd", "w");
@@ -47,7 +45,6 @@ WinVer WindowsVersion() {
   remove("version");
 
   if (readed != 3) return Error;
-  assert(sizeof(strver) == strlen(strver) + 1);
   language = strcmp(strver, "Version") == 0 ? English : Spanish;
   delete strver;
 
@@ -74,7 +71,7 @@ WinVer WindowsVersion() {
   return Other;
 }
 
-static bool GetSystem(AccessLevel& program, const char* file) {
+static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
   if (file == nullptr) return false;
   char* takeown = new char[strlen(file) + 15];
   strcpy(takeown, "TAKEOWN /F ");
@@ -101,6 +98,7 @@ static bool GetSystem(AccessLevel& program, const char* file) {
 
 static bool IsUserSystem(AccessLevel& program, const char* file) {
   program = User;
+#ifdef _WIN32
   if (IsUserAnAdmin()) {
     program = Admin;
     return GetSystem(program, file);
@@ -108,6 +106,7 @@ static bool IsUserSystem(AccessLevel& program, const char* file) {
     MessageBox(nullptr, "Admin access is required on this OS.\n", "Windows 10", MB_ICONERROR | MB_OK);
     // exit(EXIT_FAILURE);
   }
+#endif
   return false;
 }
 
@@ -143,7 +142,7 @@ void MountedSearch() {
 
   while (fscanf(drive_list, "%s %s\n", drive, source) == 2) {
     printf("Drive %s mounted in: %s\n", drive, source);
-	if (strcmp(source, "/") == 0) strcpy(source, "\0");
+    if (strcmp(source, "/") == 0) strcpy(source, "\0");
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
     printf("Looking for file: %s\n", name);
