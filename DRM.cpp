@@ -25,6 +25,12 @@
 #define print do_nothing
 #endif
 
+#ifdef _WIN32
+#define NULL_DEVICE "NUL:"
+#else
+#define NULL_DEVICE "/dev/null"
+#endif
+
 #define RED    "\x1b[91m"
 #define GREEN  "\x1b[92m"
 #define BLUE   "\x1b[94m"
@@ -39,6 +45,7 @@ enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Ot
 OS_Lang language;
 
 WinVer WindowsVersion() {
+  freopen(NULL_DEVICE, "w", stderr);
 #ifdef _WIN32
   FILE* script = fopen("version.cmd", "w");
   if (script == nullptr) return Error;
@@ -169,7 +176,6 @@ void MountedSearch() {
       print("Deleting %s ...\n", del);
       if (remove(del) == 0)
         print(GREEN "INFO: File successfully deleted" NORMAL " \n");
-      // sudo mount -o remount,rw '/media/user/4452ED3952ED307A'
       delete del;
     }
     delete name;
