@@ -25,15 +25,6 @@
 #define print do_nothing
 #endif
 
-/*
-#ifdef _WIN32
-#define NULL_DEVICE "NUL:"
-#else
-#define NULL_DEVICE "/dev/null"
-#endif
-freopen(NULL_DEVICE, "w", stderr);
-*/
-
 #define RED    "\x1b[91m"
 #define GREEN  "\x1b[92m"
 #define BLUE   "\x1b[94m"
@@ -65,6 +56,7 @@ WinVer WindowsVersion() {
   remove("version");
 
   if (readed != 3) return Error;
+  assert(strlen(strver) + 1 == 8);
   language = strcmp(strver, "Version") == 0 ? English : Spanish;
   delete strver;
 
@@ -203,10 +195,12 @@ void UnmountedSearch() {
     print("Unmounted drive found in: %s\n", drive);
 
     print("Mounting drive...\n");
-    char* mount = new char[strlen(drive) + 33];
+    char* mount = new char[strlen(drive) + 46];
     strcpy(mount, "udisksctl mount -b /dev/");
     strcat(mount, drive);
-    strcat(mount, " > media");
+    strcat(mount, " > media 2> /dev/null");
+    assert(strlen(mount) + 1 == strlen(drive) + 46);
+
     system(mount);
     delete mount;
 
