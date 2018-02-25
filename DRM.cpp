@@ -25,11 +25,14 @@
 #define print do_nothing
 #endif
 
+/*
 #ifdef _WIN32
 #define NULL_DEVICE "NUL:"
 #else
 #define NULL_DEVICE "/dev/null"
 #endif
+freopen(NULL_DEVICE, "w", stderr);
+*/
 
 #define RED    "\x1b[91m"
 #define GREEN  "\x1b[92m"
@@ -45,7 +48,6 @@ enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Ot
 OS_Lang language;
 
 WinVer WindowsVersion() {
-  freopen(NULL_DEVICE, "w", stderr);
 #ifdef _WIN32
   FILE* script = fopen("version.cmd", "w");
   if (script == nullptr) return Error;
@@ -56,7 +58,6 @@ WinVer WindowsVersion() {
 
   unsigned int major, minor;
   char* strver = new char[8];
-  // ó is a single character
   FILE* ver = fopen("version", "r");
   if (ver == nullptr) return Error;
   int readed = fscanf(ver, "\nMicrosoft Windows [%s %u.%u.", strver, &major, &minor);
@@ -92,15 +93,16 @@ WinVer WindowsVersion() {
 
 static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
   if (file == nullptr) return false;
-  char* takeown = new char[strlen(file) + 15];
+  char* takeown = new char[strlen(file) + 24];
   strcpy(takeown, "TAKEOWN /F ");
   strcat(takeown, file);
   strcat(takeown, " /A");
   print("Executing: %s\n", takeown);
+  strcat(takeown, ">nul 2>&1");
   system(takeown);
   delete takeown;
 
-  char* grant = language == English ? new char[strlen(file) + 32] : new char[strlen(file) + 33];
+  char* grant = language == English ? new char[strlen(file) + 41] : new char[strlen(file) + 42];
   strcpy(grant, "ICACLS ");
   strcat(grant, file);
   if (language == English)
@@ -108,6 +110,7 @@ static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
   else
     strcat(grant, " /GRANT Administradores:F");
   print("Executing: %s\n", grant);
+  strcat(grant, ">nul 2>&1");
   system(grant);
   delete(grant);
 
