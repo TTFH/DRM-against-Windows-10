@@ -1,14 +1,23 @@
 # DRM-against-Windows-10
 Windows and Linux DRM software with dual-boot support.
 
-g++ -Wall DRM.cpp -o test.exe
+**Building:**
 
-test
+g++-7 -Wall DRM.cpp -o DRM-Linux
 
+g++-7 -Wall -DDEBUG DRM.cpp -o DRM-Linux-Debug
 
-g++-7 -Wall DRM.cpp -o test
+g++ -Wall DRM.cpp -o DRM-Windows.exe
 
-./test
+g++ -Wall -DDEBUG DRM.cpp -o DRM-Windows-Debug.exe
 
+**Running:**
 
+./DRM-Linux
+
+./DRM-Linux-Debug
+
+DRM-Windows.exe
+
+DRM-Windows-Debug.exe
 
