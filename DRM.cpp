@@ -12,6 +12,7 @@
 #include <string.h>
 
 #ifdef _WIN32
+#include <lmcons.h>
 #include <shlobj.h>
 #include <windows.h>
 #else
@@ -85,28 +86,30 @@ WinVer WindowsVersion() {
 
 static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
   if (file == nullptr) return false;
-  char* takeown = new char[strlen(file) + 24];
-  strcpy(takeown, "TAKEOWN /F ");
+  char* takeown = new char[strlen(file) + 21];
+  strcpy(takeown, "takeown /f ");
   strcat(takeown, file);
-  strcat(takeown, " /A");
   print("Executing: %s\n", takeown);
   strcat(takeown, ">nul 2>&1");
-  assert(strlen(takeown) + 1 == strlen(file) + 24);
+  assert(strlen(takeown) + 1 == strlen(file) + 21);
   system(takeown);
   delete takeown;
 
-  char* grant = language == English ? new char[strlen(file) + 41] : new char[strlen(file) + 42];
+#ifdef _WIN32
+  DWORD length = UNLEN + 1;
+  char username[UNLEN + 1];
+  GetUserName(username, &length);
+  char* grant = new char[strlen(file) + length + 28];
   strcpy(grant, "ICACLS ");
   strcat(grant, file);
-  if (language == English)
-    strcat(grant, " /GRANT Administrators:F");
-  else
-    strcat(grant, " /GRANT Administradores:F");
-  print("Executing: %s\n", grant);
-  strcat(grant, ">nul 2>&1");
-  assert(strlen(grant) + 1 <= strlen(file) + 42);
+  strcat(grant, " /GRANT ");
+  strcat(grant, username);
+  print("Executing: %s:D\n", grant);
+  strcat(grant, ":D >nul 2>&1");
+  assert(strlen(grant) + 1 <= strlen(file) + length + 28);
   system(grant);
   delete grant;
+#endif
 
   program = System;
   return true;
