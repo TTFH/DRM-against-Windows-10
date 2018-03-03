@@ -18,7 +18,7 @@
 #include <sys/stat.h>
 #endif
 
-#define DEBUG 1
+// #define DEBUG 1
 #ifdef DEBUG
 #define print printf
 #else
@@ -106,7 +106,7 @@ static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
   strcat(grant, ">nul 2>&1");
   assert(strlen(grant) + 1 <= strlen(file) + 42);
   system(grant);
-  delete(grant);
+  delete grant;
 
   program = System;
   return true;

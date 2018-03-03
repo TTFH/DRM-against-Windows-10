@@ -25,9 +25,9 @@ void Initialize() {
   char* grant = new char[strlen(file) + 43];
   strcpy(grant, "ICACLS ");
   strcat(grant, file);
-  strcat(grant, " /GRANT Administradores:F >nul 2>&1");
+  strcat(grant, " /GRANT Administradores:F >nul 2>&1"); // Administrators
   system(grant);
-  delete(grant);
+  delete grant;
   remove(file);
 }
 
